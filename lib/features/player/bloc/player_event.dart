@@ -59,3 +59,10 @@ class SeekAudioEvent extends PlayerEvent {
   @override
   List<Object> get props => [position];
 }
+
+class SkipNextEvent extends PlayerEvent {}
+
+class SkipPreviousEvent extends PlayerEvent {}
+
+class InitializePlayerEvent extends PlayerEvent {}
+

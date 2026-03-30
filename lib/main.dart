@@ -39,8 +39,10 @@ class HearilApp extends StatelessWidget {
       ),
       // inject the BLoC down the widget tree
       home: BlocProvider(create: (context) {
+        
         final bloc = PlayerBloc(audioService);
-
+        bloc.add(InitializePlayerEvent());
+        
         bloc.add(const LoadAudioEvent(
           'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
         ));
