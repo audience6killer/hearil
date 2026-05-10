@@ -179,7 +179,7 @@ class PlayerView extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(10),
         // 1. Wait 400ms for the Navigator.push animation to finish
         child: FutureBuilder(
           future: Future.delayed(const Duration(milliseconds: 400)),
@@ -211,6 +211,7 @@ class PlayerView extends StatelessWidget {
                       artworkWidth: 300,
                       artworkHeight: 300,
                       artworkFit: BoxFit.cover,
+                      artworkBorder: BorderRadius.circular(10),
                       nullArtworkWidget: Container(
                         color: Colors.grey.shade900,
                         child: const Center(

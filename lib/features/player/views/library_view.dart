@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hearil_music_player/core/utils/slide_up_route.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 
 import '../../player/bloc/player_bloc.dart';
@@ -200,10 +201,7 @@ class LibraryView extends StatelessWidget {
         return GestureDetector(
           // Slide to the full Player View when tapped
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const PlayerView()),
-            );
+            Navigator.push(context, SlideUpRoute(page: const PlayerView()));
           },
           child: Container(
             height: 70,
