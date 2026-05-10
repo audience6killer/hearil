@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:on_audio_query/on_audio_query.dart';
 
 // 'sealed' ensures that it we write a switch statement fot the events later
 // the Dart compiler will force us to handle every single event
@@ -10,14 +11,21 @@ sealed class PlayerEvent extends Equatable {
   List<Object> get props => [];
 }
 
-
-class LoadAudioEvent extends PlayerEvent {
-  final String url;
-
-  const LoadAudioEvent(this.url);
+class TrackIndexChangedEvent extends PlayerEvent {
+  final int index;
+  const TrackIndexChangedEvent(this.index);
 
   @override
-  List<Object> get props => [url];
+  List<Object> get props => [index];
+}
+
+class LoadAudioEvent extends PlayerEvent {
+  final SongModel song;
+
+  const LoadAudioEvent(this.song);
+
+  @override
+  List<Object> get props => [song];
 }
 
 class PlayAudioEvent extends PlayerEvent {

@@ -5,7 +5,7 @@ import 'package:just_audio_background/just_audio_background.dart';
 import 'features/player/bloc/player_bloc.dart';
 import 'features/player/bloc/player_event.dart';
 import 'features/player/views/player_view.dart';
-
+import 'features/player/views/library_view.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,6 +14,7 @@ Future<void> main() async {
     androidNotificationChannelId: 'com.hearil.app.channel.audio',
     androidNotificationChannelName: "Audio playback",
     androidNotificationOngoing: true,
+    androidStopForegroundOnPause: true,
   );
 
   // Initialize the core service once
@@ -30,26 +31,19 @@ class HearilApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Hearil',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        useMaterial3: true,
+    return BlocProvider(
+      create: (context) => PlayerBloc(audioService)..add(InitializePlayerEvent()),
+      child: MaterialApp(
+        title: 'Music Player',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          useMaterial3: true,
+          brightness: Brightness.dark,
+        ),
+        // 3. The home is now just the raw LibraryView. 
+        // It will automatically inherit the Bloc from above!
+        home: const LibraryView(), 
       ),
-      // inject the BLoC down the widget tree
-      home: BlocProvider(create: (context) {
-        
-        final bloc = PlayerBloc(audioService);
-        bloc.add(InitializePlayerEvent());
-        
-        bloc.add(const LoadAudioEvent(
-          'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
-        ));
-        return bloc;
-      },
-      child: const PlayerView(),
-      )
     );
   }
 }

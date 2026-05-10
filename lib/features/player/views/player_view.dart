@@ -25,9 +25,8 @@ class PlayerView extends StatelessWidget {
       // 1. HOISTED: BlocBuilder now wraps the entire Stack, including the background
       body: BlocBuilder<PlayerBloc, PlayerState>(
         buildWhen: (previous, current) {
-          if(previous is PlayerReady && current is PlayerReady) { 
-            return previous.songId != current.songId ||
-              previous.isPlaying != current.isPlaying;
+          if (previous is PlayerReady && current is PlayerReady) {
+            return previous.songId != current.songId;
           }
 
           return true;
@@ -62,6 +61,38 @@ class PlayerView extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20.0,
+                          vertical: 8.0,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                color: Colors.white,
+                                size: 36,
+                              ),
+                              // Pops the route to slide back down to the Library
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                            const Text(
+                              "NOW PLAYING",
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 12,
+                                letterSpacing: 2.0,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(
+                              width: 48,
+                            ), // Invisible spacer to perfectly center the text
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: 20),
 
                       // 3. DYNAMIC FOREGROUND ART
@@ -78,11 +109,14 @@ class PlayerView extends StatelessWidget {
                             const SizedBox(height: 25),
                             _buildProgressBar(context),
                             const SizedBox(height: 30),
-                            _buildPlaybackControls(context, state),
+                            _buildPlaybackControls(context),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      // const SizedBox(height: 20),
+                      _buildNextSongIndicator(context),
+
+                      // const SizedBox(height: 10),
                     ],
                   ),
                 ),
@@ -96,26 +130,37 @@ class PlayerView extends StatelessWidget {
   }
 
   // --- Dynamic UI Components ---
-
   Widget _buildBackgroundArt(PlayerReady state) {
-    // 1. Wrap the output in an AnimatedSwitcher
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 600), // Adjust cross-fade speed here
-      child: state.songId == null
-          ? Container(key: const ValueKey('empty'), color: Colors.grey.shade900)
-          : QueryArtworkWidget(
-              key: ValueKey(state.songId), 
-              id: state.songId!,
-              type: ArtworkType.AUDIO,
-              // ADD THESE TWO LINES
-              size: 1000, 
-              artworkQuality: FilterQuality.high,
-              // -------------------
-              artworkWidth: double.infinity,
-              artworkHeight: double.infinity,
-              artworkFit: BoxFit.cover,
-              nullArtworkWidget: Container(color: Colors.grey.shade900), 
-            ),
+    // 1. Wait 400ms for the Navigator.push animation to finish
+    return FutureBuilder(
+      future: Future.delayed(const Duration(milliseconds: 400)),
+      builder: (context, snapshot) {
+        // 2. While sliding, show a solid color (costs zero GPU)
+        if (snapshot.connectionState != ConnectionState.done) {
+          return Container(color: Colors.black);
+        }
+
+        // 3. Once the slide is done, fetch the heavy background art
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 600),
+          child: state.songId == null
+              ? Container(
+                  key: const ValueKey('empty'),
+                  color: Colors.grey.shade900,
+                )
+              : QueryArtworkWidget(
+                  key: ValueKey(state.songId),
+                  id: state.songId!,
+                  type: ArtworkType.AUDIO,
+                  size: 100,
+                  artworkQuality: FilterQuality.low,
+                  artworkWidth: double.infinity,
+                  artworkHeight: double.infinity,
+                  artworkFit: BoxFit.cover,
+                  nullArtworkWidget: Container(color: Colors.grey.shade900),
+                ),
+        );
+      },
     );
   }
 
@@ -134,30 +179,62 @@ class PlayerView extends StatelessWidget {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        // 3. Wrap the inner child in the AnimatedSwitcher
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 400),
-          child: state.songId != null
-              ? QueryArtworkWidget(
-                  key: ValueKey(state.songId),
-                  id: state.songId!,
-                  type: ArtworkType.AUDIO,
-                  // ADD THESE TWO LINES
-                  size: 1000, 
-                  artworkQuality: FilterQuality.high,
-                  // -------------------
-                  artworkWidth: 300,
-                  artworkHeight: 300,
-                  artworkFit: BoxFit.cover,
-                  nullArtworkWidget: const Center(
-                    child: Icon(Icons.music_note, size: 120, color: Colors.white54),
+        borderRadius: BorderRadius.circular(20),
+        // 1. Wait 400ms for the Navigator.push animation to finish
+        child: FutureBuilder(
+          future: Future.delayed(const Duration(milliseconds: 400)),
+          builder: (context, snapshot) {
+            // 2. While sliding, show a simple icon
+            if (snapshot.connectionState != ConnectionState.done) {
+              return Container(
+                color: Colors.grey.shade900,
+                child: const Center(
+                  child: Icon(
+                    Icons.music_note,
+                    size: 120,
+                    color: Colors.white54,
                   ),
-                )
-              : const Center(
-                  key: ValueKey('empty_icon'),
-                  child: Icon(Icons.music_note, size: 120, color: Colors.white54),
                 ),
+              );
+            }
+
+            // 3. Once the slide is done, fetch the heavy high-res art
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 600),
+              child: state.songId != null
+                  ? QueryArtworkWidget(
+                      key: ValueKey(state.songId),
+                      id: state.songId!,
+                      type: ArtworkType.AUDIO,
+                      size: 600,
+                      artworkQuality: FilterQuality.high,
+                      artworkWidth: 300,
+                      artworkHeight: 300,
+                      artworkFit: BoxFit.cover,
+                      nullArtworkWidget: Container(
+                        color: Colors.grey.shade900,
+                        child: const Center(
+                          child: Icon(
+                            Icons.music_note,
+                            size: 120,
+                            color: Colors.white54,
+                          ),
+                        ),
+                      ),
+                    )
+                  : Container(
+                      key: const ValueKey('empty_icon'),
+                      color: Colors.grey.shade900,
+                      child: const Center(
+                        child: Icon(
+                          Icons.music_note,
+                          size: 120,
+                          color: Colors.white54,
+                        ),
+                      ),
+                    ),
+            );
+          },
         ),
       ),
     );
@@ -194,8 +271,8 @@ class PlayerView extends StatelessWidget {
     );
   }
 
-// Notice we don't pass 'state' as an argument anymore, the builder provides it
-  Widget _buildProgressBar(BuildContext context) { 
+  // Notice we don't pass 'state' as an argument anymore, the builder provides it
+  Widget _buildProgressBar(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: BackdropFilter(
@@ -215,14 +292,18 @@ class PlayerView extends StatelessWidget {
             // This builder has no buildWhen mask, so it reacts to every single 200ms tick
             builder: (context, state) {
               if (state is! PlayerReady) return const SizedBox.shrink();
-              
+
               return Column(
                 children: [
                   SliderTheme(
                     data: SliderTheme.of(context).copyWith(
                       trackHeight: 3.0,
-                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0),
-                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 14.0),
+                      thumbShape: const RoundSliderThumbShape(
+                        enabledThumbRadius: 6.0,
+                      ),
+                      overlayShape: const RoundSliderOverlayShape(
+                        overlayRadius: 14.0,
+                      ),
                       activeTrackColor: Colors.white,
                       inactiveTrackColor: Colors.white.withOpacity(0.2),
                       thumbColor: Colors.white,
@@ -234,14 +315,16 @@ class PlayerView extends StatelessWidget {
                           ? state.duration.inSeconds.toDouble()
                           : 1.0,
                       value: state.position.inSeconds.toDouble().clamp(
-                            0.0,
-                            state.duration.inSeconds.toDouble() > 0
-                                ? state.duration.inSeconds.toDouble()
-                                : 1.0,
-                          ),
+                        0.0,
+                        state.duration.inSeconds.toDouble() > 0
+                            ? state.duration.inSeconds.toDouble()
+                            : 1.0,
+                      ),
                       onChanged: (value) {
                         final newPosition = Duration(seconds: value.toInt());
-                        context.read<PlayerBloc>().add(SeekAudioEvent(newPosition));
+                        context.read<PlayerBloc>().add(
+                          SeekAudioEvent(newPosition),
+                        );
                       },
                     ),
                   ),
@@ -253,11 +336,17 @@ class PlayerView extends StatelessWidget {
                       children: [
                         Text(
                           _formatDuration(state.position),
-                          style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13),
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 13,
+                          ),
                         ),
                         Text(
                           _formatDuration(state.duration),
-                          style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13),
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 13,
+                          ),
                         ),
                       ],
                     ),
@@ -271,38 +360,180 @@ class PlayerView extends StatelessWidget {
     );
   }
 
-  Widget _buildPlaybackControls(BuildContext context, PlayerReady state) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        FrostedIconButton(
-          iconSize: 40,
-          icon: Icons.skip_previous_rounded,
-          onPressed: () {
-            context.read<PlayerBloc>().add(SkipPreviousEvent());
-          }, // To be implemented later
-        ),
-        FrostedIconButton(
-          iconSize: 80,
-          icon: state.isPlaying
-              ? Icons.pause_rounded
-              : Icons.play_arrow_rounded,
-          onPressed: () {
-            if (state.isPlaying) {
-              context.read<PlayerBloc>().add(PauseAudioEvent());
-            } else {
-              context.read<PlayerBloc>().add(PlayAudioEvent());
-            }
+  // Remove the 'state' argument
+  Widget _buildPlaybackControls(BuildContext context) {
+    // 1. Wrap the controls in an isolated BlocBuilder
+    return BlocBuilder<PlayerBloc, PlayerState>(
+      // 2. Only rebuild these 3 buttons if the play state changes
+      buildWhen: (previous, current) {
+        if (previous is PlayerReady && current is PlayerReady) {
+          return previous.isPlaying != current.isPlaying;
+        }
+        return true;
+      },
+      builder: (context, state) {
+        if (state is! PlayerReady) return const SizedBox.shrink();
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            FrostedIconButton(
+              iconSize: 28,
+              icon: Icons.skip_previous_rounded,
+              onPressed: () {
+                context.read<PlayerBloc>().add(SkipPreviousEvent());
+              },
+            ),
+
+            FrostedIconButton(
+              iconSize: 48,
+              // The icon now safely updates in isolation
+              icon: state.isPlaying
+                  ? Icons.pause_rounded
+                  : Icons.play_arrow_rounded,
+              onPressed: () {
+                if (state.isPlaying) {
+                  context.read<PlayerBloc>().add(PauseAudioEvent());
+                } else {
+                  context.read<PlayerBloc>().add(PlayAudioEvent());
+                }
+              },
+            ),
+
+            FrostedIconButton(
+              iconSize: 28,
+              icon: Icons.skip_next_rounded,
+              onPressed: () {
+                context.read<PlayerBloc>().add(SkipNextEvent());
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildNextSongIndicator(BuildContext context) {
+    // 1. OUTER BUILDER: Only rebuilds when the physical song changes
+    // This loads the metadata for the next track once per song.
+    return BlocBuilder<PlayerBloc, PlayerState>(
+      buildWhen: (previous, current) {
+        if (previous is PlayerReady && current is PlayerReady) {
+          return previous.songId != current.songId;
+        }
+        return true;
+      },
+      builder: (context, state) {
+        if (state is! PlayerReady ||
+            state.playlist.isEmpty ||
+            state.songId == null) {
+          return const SizedBox.shrink();
+        }
+
+        // Calculate the next song metadata
+        final currentIndex = state.playlist.indexWhere(
+          (song) => song.id == state.songId,
+        );
+        if (currentIndex == -1) return const SizedBox.shrink();
+
+        final nextIndex = (currentIndex + 1) % state.playlist.length;
+        final nextSong = state.playlist[nextIndex];
+
+        // 2. INNER SELECTOR: Only rebuilds the UI when the 10-second threshold flips (false -> true)
+        // It completely ignores the 200ms slider ticks!
+        return BlocSelector<PlayerBloc, PlayerState, bool>(
+          selector: (state) {
+            if (state is! PlayerReady) return false;
+            final remainingSeconds =
+                state.duration.inSeconds - state.position.inSeconds;
+            // Return true if in the final 10 seconds, false otherwise
+            return remainingSeconds <= 10 &&
+                remainingSeconds > 0 &&
+                state.duration.inSeconds > 10;
           },
-        ),
-        FrostedIconButton(
-          iconSize: 40,
-          icon: Icons.skip_next_rounded,
-          onPressed: () {
-            context.read<PlayerBloc>().add(SkipNextEvent());
-          }, // to be implemented later
-        ),
-      ],
+          builder: (context, isEnding) {
+            return AnimatedOpacity(
+              opacity: isEnding ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 600),
+              child: GestureDetector(
+                onTap: () {
+                  if (isEnding) {
+                    context.read<PlayerBloc>().add(SkipNextEvent());
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: QueryArtworkWidget(
+                          key: ValueKey(nextSong.id),
+                          id: nextSong.id,
+                          type: ArtworkType.AUDIO,
+                          artworkWidth: 40,
+                          artworkHeight: 40,
+                          size: 400,
+                          artworkQuality: FilterQuality.medium,
+                          nullArtworkWidget: Container(
+                            width: 40,
+                            height: 40,
+                            color: Colors.white.withOpacity(0.2),
+                            child: const Icon(
+                              Icons.music_note,
+                              color: Colors.white54,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "UP NEXT",
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 10,
+                              letterSpacing: 1.2,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          SizedBox(
+                            width: 160,
+                            child: Text(
+                              nextSong.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

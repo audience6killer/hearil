@@ -23,6 +23,8 @@ class PlayerReady extends PlayerState {
   final int? songId; 
 
   final List<SongModel> playlist;
+  final List<AlbumModel> albums;
+  final List<ArtistModel> artists;
 
   const PlayerReady({
     required this.isPlaying, 
@@ -32,6 +34,8 @@ class PlayerReady extends PlayerState {
     this.artist = 'Unknown Artist',
     this.songId,
     this.playlist = const [],
+    this.albums = const [],
+    this.artists = const [],
   });
 
   PlayerReady copyWith({
@@ -42,6 +46,8 @@ class PlayerReady extends PlayerState {
     String? artist,
     int? songId,
     List<SongModel>? playlist,
+    List<AlbumModel>? albums,
+    List<ArtistModel>? artists,
   }) {
     return PlayerReady(
       isPlaying: isPlaying ?? this.isPlaying,
@@ -51,12 +57,14 @@ class PlayerReady extends PlayerState {
       artist: artist ?? this.artist,
       songId: songId ?? this.songId,
       playlist: playlist ?? this.playlist,
+      albums: albums ?? this.albums,
+      artists: artists ?? this.artists,
     );
   }
 
    // CRITICAL: Don't forget to add the new fields to the Equatable props!
    @override
-   List<Object?> get props => [isPlaying, position, duration, title, artist, songId, playlist];
+   List<Object?> get props => [isPlaying, position, duration, title, artist, songId, playlist, albums, artists];
 }
 
 class PlayerError extends PlayerState {
